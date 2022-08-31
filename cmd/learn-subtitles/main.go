@@ -1,17 +1,17 @@
 package main
 
 import (
+	"github.com/PanovAlexey/learn-subtitles/internal/application/service/phrase"
+	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	"github.com/PanovAlexey/learn-subtitles/internal/config"
+	"github.com/PanovAlexey/learn-subtitles/internal/controller/bots/telegram"
+	loggerInterface "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/logging"
+	telegramService "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/telegram"
+	telegramServer "github.com/PanovAlexey/learn-subtitles/internal/server/bots/telegram"
 	"github.com/PanovAlexey/learn-subtitles/pkg/logging"
 	"github.com/joho/godotenv"
 	"log"
 )
-
-type Logger interface {
-	Error(args ...interface{})
-	Info(args ...interface{})
-	Debug(args ...interface{})
-}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -30,6 +30,28 @@ func main() {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
 
-func startTelegramBotServer() {
-	 
+	defer logger.Sync()
+
+	err = startTelegramBotServer(*config, logger)
+
+	if err != nil {
+		logger.Panic(err)
+	}
+}
+
+func startTelegramBotServer(config config.Config, logger loggerInterface.Logger) error {
+	botResolver := telegramService.NewBotResolver(config.GetTelegramBotToken(), logger)
+	bot, err := botResolver.GetTelegramBot()
+
+	if err != nil {
+		return err
+	}
+
+	subtitlesService := subtitles.NewSubtitlesService(config)
+	phraseService := phrase.NewPhraseService()
+	telegramRouter := telegram.NewRouter(bot, logger, subtitlesService, phraseService)
+	telegramServer := telegramServer.NewServer(telegramRouter, config.GetTelegramBotUpdateTimeout())
+	telegramServer.Start()
+
+	return nil
 }

@@ -14,5 +14,5 @@ type State interface {
 	GetTranslateByPhraseId() (*entity.PhraseTranslation, error)
 	SetTranslateByPhraseId(translation string) error
 	HideThisPhraseById() error
-	GetCode() int
+	GetCode() StatesEnum
 }

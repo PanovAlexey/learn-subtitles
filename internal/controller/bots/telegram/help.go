@@ -1,14 +1,21 @@
 package telegram
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"strconv"
+)
 
-func (r CommandRouter) helpCommand(inputMesage tgbotapi.Message) {
-	r.logger.Info("help handler. from: " + inputMesage.From.UserName)
+func (r CommandRouter) helpCommand(inputMessage tgbotapi.Message) {
+	r.logger.Info("help handler. from: " + inputMessage.From.UserName)
+
+	dialog, _ := r.userStateService.GetUserDialog(strconv.FormatInt(inputMessage.Chat.ID, 10))
+	dialog.SetRestState()
 
 	msg := tgbotapi.NewMessage(
-		inputMesage.Chat.ID,
-		"/help - help\n"+
-			"/list - list subtitles ",
+		inputMessage.Chat.ID,
+		r.getAvailableCommandListString(),
 	)
+
+	msg.ParseMode = tgbotapi.ModeHTML
 	r.bot.Send(msg)
 }

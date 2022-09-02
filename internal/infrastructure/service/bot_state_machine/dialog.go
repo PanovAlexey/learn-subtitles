@@ -42,20 +42,80 @@ func NewDialog(userId int64, subtitlesService subtitles.SubtitlesService) *Dialo
 	return d
 }
 
-func (d *Dialog) AddSubtitles() (*entity.Subtitle, error) {
+func (d *Dialog) TryToHandleUserData(data string) (string, error) {
+	stateCode := d.currentState.GetCode()
+
+	switch stateCode {
+	case Rest:
+		return "",
+			errors.New(
+				"no command selected for interaction. Input: " + data,
+			)
+	case ReadyToAddSubtitlesName:
+		err := d.AddSubtitlesName(data)
+
+		if err != nil {
+			return "", err
+		}
+
+		d.subtitles.Name = data
+
+		return "Please enter the text to study:", nil
+	case ReadyToAddSubtitlesText:
+		err := d.AddSubtitlesText(data)
+
+		if err != nil {
+			return "", err
+		}
+
+		d.subtitles.Text = data
+
+		return "Please enter the forbidden parts to replace:", nil
+	case ReadyToAddSubtitlesProhibitedWords:
+		err := d.AddForbiddenPartsAndSaveSubtitles(d.subtitles, data)
+
+		if err != nil {
+			return "", err
+		}
+
+		info := "You have successfully added text!\n" +
+			"<strong>name:</strong> " + d.subtitles.Name + "\n" +
+			"<strong>length:</strong> " + strconv.Itoa(len(d.subtitles.Text)) + "\n" +
+			"<strong>spoiler substitution map:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.ForbiddenParts) + "\n"
+
+		return info, nil
+	case HasSubtitlesList:
+
+	case SelectedSubtitles:
+
+	case HasRandomPhrase:
+
+	case ReadyToAddTranslationRandomPhrase:
+	default:
+		d.SetRestState()
+
+		return "", errors.New(
+			"wrong current state code: " + strconv.Itoa(int(stateCode)),
+		)
+	}
+
+	return "", nil
+}
+
+func (d *Dialog) AddSubtitles() error {
 	return d.currentState.AddSubtitles()
 }
 
-func (d *Dialog) AddSubtitlesName(name string) (*entity.Subtitle, error) {
+func (d *Dialog) AddSubtitlesName(name string) error {
 	return d.currentState.AddSubtitlesName(name)
 }
 
-func (d *Dialog) AddSubtitlesText(text string) (*entity.Subtitle, error) {
+func (d *Dialog) AddSubtitlesText(text string) error {
 	return d.currentState.AddSubtitlesText(text)
 }
 
-func (d *Dialog) AddSubtitlesForbiddenParts(forbiddenParts []string) (*entity.Subtitle, error) {
-	return d.currentState.AddSubtitlesForbiddenParts(forbiddenParts)
+func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) error {
+	return d.currentState.AddForbiddenPartsAndSaveSubtitles(subtitles, forbiddenPartsString)
 }
 
 func (d *Dialog) GetSubtitlesList() ([]entity.Subtitle, error) {

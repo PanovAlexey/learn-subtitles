@@ -6,7 +6,7 @@ type State interface {
 	AddSubtitles() error
 	AddSubtitlesName(name string) error
 	AddSubtitlesText(text string) error
-	AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) error
+	AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) (*entity.Subtitle, error)
 	GetSubtitlesList() ([]entity.Subtitle, error)
 	GetSubtitlesById() (*entity.Subtitle, error)
 	DeleteSubtitlesById() error

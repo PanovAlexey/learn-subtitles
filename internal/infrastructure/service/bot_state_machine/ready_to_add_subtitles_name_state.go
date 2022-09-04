@@ -35,8 +35,11 @@ func (s *ReadyToAddSubtitlesNameState) AddSubtitlesText(text string) error {
 	return errors.New("not available command for current state")
 }
 
-func (s *ReadyToAddSubtitlesNameState) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) error {
-	return errors.New("not available command for current state")
+func (s *ReadyToAddSubtitlesNameState) AddForbiddenPartsAndSaveSubtitles(
+	subtitles entity.Subtitle,
+	forbiddenPartsString string,
+) (*entity.Subtitle, error) {
+	return nil, errors.New("not available command for current state")
 }
 
 func (s *ReadyToAddSubtitlesNameState) GetSubtitlesList() ([]entity.Subtitle, error) {

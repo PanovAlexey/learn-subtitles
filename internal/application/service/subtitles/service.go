@@ -1,8 +1,12 @@
 package subtitles
 
 import (
+	"fmt"
+	customErrors "github.com/PanovAlexey/learn-subtitles/internal/application/errors"
 	"github.com/PanovAlexey/learn-subtitles/internal/config"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
+	"log"
+	"strings"
 )
 
 type SubtitlesService struct {
@@ -31,6 +35,29 @@ func (s SubtitlesService) Delete(userId, id int) error {
 	return nil
 }
 
+func (s SubtitlesService) ValidateName(name string) error {
+	if len(name) < 3 {
+		return fmt.Errorf("%v: %w", name, customErrors.ErrIsEmpty)
+	}
+
+	if len(name) > 100 {
+		return fmt.Errorf("%v: %w", name, customErrors.ErrTooLong)
+	}
+
+	return nil
+}
+
+func (s SubtitlesService) ValidateText(text string) error {
+	if len(text) < 100 {
+		return fmt.Errorf("%v: %w", text, customErrors.ErrIsEmpty)
+	}
+
+	if len(text) > 100000 {
+		return fmt.Errorf("%v: %w", text, customErrors.ErrTooLong)
+	}
+
+	return nil
+}
 
 func (s SubtitlesService) GetForbiddenPartsMapByString(data string) map[string]string {
 	forbiddenPartsMap := map[string]string{}

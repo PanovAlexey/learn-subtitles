@@ -14,7 +14,7 @@ func (r CommandRouter) defaultBehavior(inputMessage tgbotapi.Message) {
 
 	if err != nil {
 		r.logger.Debug("tg bot default handler: ", err)
-		resultText = "You wrote: <i>" + inputMessage.Text + "</i>.\nInvalid input. Please repeat.\n\n" /* + r.getAvailableCommandListString()*/
+		resultText = "You wrote:\n <i>" + inputMessage.Text + "</i>.\nInvalid input. Please repeat.\n\n" /* + r.getAvailableCommandListString()*/
 	} else {
 		resultText = info
 	}

@@ -27,8 +27,11 @@ func (s *HasRandomPhraseState) AddSubtitlesText(text string) error {
 	return errors.New("not available command for current state")
 }
 
-func (s *HasRandomPhraseState) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) error {
-	return errors.New("not available command for current state")
+func (s *HasRandomPhraseState) AddForbiddenPartsAndSaveSubtitles(
+	subtitles entity.Subtitle,
+	forbiddenPartsString string,
+) (*entity.Subtitle, error) {
+	return nil, errors.New("not available command for current state")
 }
 
 func (s *HasRandomPhraseState) GetSubtitlesList() ([]entity.Subtitle, error) {

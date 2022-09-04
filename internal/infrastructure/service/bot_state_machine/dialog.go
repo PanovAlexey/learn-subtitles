@@ -1,8 +1,12 @@
 package bot_state_machine
 
 import (
+	"errors"
+	"fmt"
+	customErrors "github.com/PanovAlexey/learn-subtitles/internal/application/errors"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
+	"strconv"
 )
 
 type Dialog struct {
@@ -52,36 +56,31 @@ func (d *Dialog) TryToHandleUserData(data string) (string, error) {
 				"no command selected for interaction. Input: " + data,
 			)
 	case ReadyToAddSubtitlesName:
-		err := d.AddSubtitlesName(data)
+		info, err := d.AddSubtitlesName(data)
 
 		if err != nil {
-			return "", err
+			return info, err
 		}
 
 		d.subtitles.Name = data
 
-		return "Please enter the text to study:", nil
+		return info, nil
 	case ReadyToAddSubtitlesText:
-		err := d.AddSubtitlesText(data)
+		info, err := d.AddSubtitlesText(data)
 
 		if err != nil {
-			return "", err
+			return info, err
 		}
 
 		d.subtitles.Text = data
 
-		return "Please enter the forbidden parts to replace:", nil
+		return info, nil
 	case ReadyToAddSubtitlesProhibitedWords:
-		err := d.AddForbiddenPartsAndSaveSubtitles(d.subtitles, data)
+		info, err := d.AddForbiddenPartsAndSaveSubtitles(d.subtitles, data)
 
 		if err != nil {
-			return "", err
+			return info, err
 		}
-
-		info := "You have successfully added text!\n" +
-			"<strong>name:</strong> " + d.subtitles.Name + "\n" +
-			"<strong>length:</strong> " + strconv.Itoa(len(d.subtitles.Text)) + "\n" +
-			"<strong>spoiler substitution map:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.ForbiddenParts) + "\n"
 
 		return info, nil
 	case HasSubtitlesList:
@@ -106,16 +105,70 @@ func (d *Dialog) AddSubtitles() error {
 	return d.currentState.AddSubtitles()
 }
 
-func (d *Dialog) AddSubtitlesName(name string) error {
-	return d.currentState.AddSubtitlesName(name)
+func (d *Dialog) AddSubtitlesName(name string) (string, error) {
+	err := d.currentState.AddSubtitlesName(name)
+
+	if err != nil {
+		if errors.As(err, &customErrors.ErrIsEmpty) {
+			return "The name must be at least 5 letters. Please re-enter.", nil //ToDo: move magic number to constants
+		}
+
+		if errors.As(err, &customErrors.ErrTooLong) {
+			return "The name must be less than 100 characters. Please re-enter.", nil //ToDo: move magic number to constants
+		}
+	}
+
+	info := "Please enter the text to study:"
+
+	return info, err
 }
 
-func (d *Dialog) AddSubtitlesText(text string) error {
-	return d.currentState.AddSubtitlesText(text)
+func (d *Dialog) AddSubtitlesText(text string) (string, error) {
+	err := d.currentState.AddSubtitlesText(text)
+
+	if err != nil {
+		if errors.As(err, &customErrors.ErrIsEmpty) {
+			return "The text must be at least 100 letters. Please re-enter.", nil //@ToDo: move magic number to constants
+		}
+
+		if errors.As(err, &customErrors.ErrTooLong) {
+			return "The text must be less than 100 000 characters. Please re-enter.", nil //@ToDo: move magic number to constants
+		}
+	}
+
+	info := "Please enter the forbidden parts to replace:"
+
+	return info, err
 }
 
-func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) error {
-	return d.currentState.AddForbiddenPartsAndSaveSubtitles(subtitles, forbiddenPartsString)
+func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) (string, error) {
+	resultSubtitles, err := d.currentState.AddForbiddenPartsAndSaveSubtitles(subtitles, forbiddenPartsString)
+	info := ""
+
+	if err != nil {
+		if errors.As(err, &customErrors.ErrTooLong) {
+			return "The length of replacement phrases should not exceed the length of the main text. Please re-enter.", nil //@ToDo: move magic number to constants
+		}
+
+		return info, err
+	} else {
+		d.subtitles = *resultSubtitles
+
+		if len(d.subtitles.ForbiddenParts) < 1 {
+			if len(forbiddenPartsString) < 1 {
+				info = "You have not specified a phrase to replace.\n\n"
+			} else {
+				info = "Failed to parse string with replacement phrases.\n\n"
+			}
+		}
+
+		info += "You have successfully added text!\n" +
+			"<strong>name:</strong> " + d.subtitles.Name + "\n" +
+			"<strong>length of text:</strong> " + strconv.Itoa(len(d.subtitles.Text)) + "\n" +
+			"<strong>spoiler substitution map:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.ForbiddenParts) + "\n"
+	}
+
+	return info, err
 }
 
 func (d *Dialog) GetSubtitlesList() ([]entity.Subtitle, error) {

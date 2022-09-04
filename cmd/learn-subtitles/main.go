@@ -5,6 +5,7 @@ import (
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	"github.com/PanovAlexey/learn-subtitles/internal/config"
 	"github.com/PanovAlexey/learn-subtitles/internal/controller/bots/telegram"
+	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/bot_state_machine"
 	loggerInterface "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/logging"
 	telegramService "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/telegram"
 	telegramServer "github.com/PanovAlexey/learn-subtitles/internal/server/bots/telegram"
@@ -49,7 +50,9 @@ func startTelegramBotServer(config config.Config, logger loggerInterface.Logger)
 
 	subtitlesService := subtitles.NewSubtitlesService(config)
 	phraseService := phrase.NewPhraseService()
-	telegramRouter := telegram.NewRouter(bot, logger, subtitlesService, phraseService)
+	userStatesService := bot_state_machine.NewUserStatesService()
+
+	telegramRouter := telegram.NewRouter(bot, logger, subtitlesService, phraseService, &userStatesService)
 	telegramServer := telegramServer.NewServer(telegramRouter, config.GetTelegramBotUpdateTimeout())
 	telegramServer.Start()
 

@@ -165,7 +165,8 @@ func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, fo
 		info += "You have successfully added text!\n" +
 			"<strong>name:</strong> " + d.subtitles.Name + "\n" +
 			"<strong>length of text:</strong> " + strconv.Itoa(len(d.subtitles.Text)) + "\n" +
-			"<strong>spoiler substitution map:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.ForbiddenParts) + "\n"
+			"<strong>spoiler substitution map:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.ForbiddenParts) + "\n" +
+			"<strong>Text:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.Text) + "\n"
 	}
 
 	return info, err

@@ -19,8 +19,11 @@ func NewSubtitlesService(config config.Config) SubtitlesService {
 	}
 }
 
-func (s SubtitlesService) Add(userId int, subtitle string, forbiddenParts []string) error {
+func (s SubtitlesService) Add(userId int, subtitles entity.Subtitle) (entity.Subtitle, error) {
 	return nil
+	subtitles = s.applyForbiddenParts(subtitles)
+
+	return subtitles, nil
 }
 
 func (s SubtitlesService) GetList(userId int) ([]entity.Subtitle, error) {
@@ -94,4 +97,19 @@ func (s SubtitlesService) GetForbiddenPartsMapByString(data string) map[string]s
 	}
 
 	return forbiddenPartsMap
+}
+
+func (s SubtitlesService) applyForbiddenParts(subtitles entity.Subtitle) entity.Subtitle {
+	parts := make([]string, len(subtitles.ForbiddenParts)*2)
+	counter := 0
+
+	for i, v := range subtitles.ForbiddenParts {
+		parts[counter] = i
+		parts[counter+1] = v
+		counter = counter + 2
+	}
+
+	subtitles.Text = strings.NewReplacer(parts...).Replace(subtitles.Text)
+
+	return subtitles
 }

@@ -5,7 +5,9 @@ import (
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	"github.com/PanovAlexey/learn-subtitles/internal/config"
 	"github.com/PanovAlexey/learn-subtitles/internal/controller/bots/telegram"
+	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/repository"
 	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/bot_state_machine"
+	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/database/postgresql"
 	loggerInterface "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/logging"
 	telegramService "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/telegram"
 	telegramServer "github.com/PanovAlexey/learn-subtitles/internal/server/bots/telegram"
@@ -33,14 +35,36 @@ func main() {
 
 	defer logger.Sync()
 
-	err = startTelegramBotServer(*config, logger)
+	postgresConnector, err := postgresql.GetPostgresConnector(
+		config.GetDatabaseUser(),
+		config.GetDatabasePassword(),
+		config.GetDatabaseAddress(),
+		config.GetDatabasePort(),
+		config.GetDatabaseName(),
+		config.GetMaxOpenConnections(),
+		config.GetMaxIdleConnections(),
+		config.GetConnectionMaxIdleTime(),
+		config.GetConnectionMaxLifeTime(),
+	)
+
+	if err != nil {
+		logger.Panic(err)
+	}
+
+	defer postgresConnector.DB.Close()
+
+	subtitleRepository := repository.NewSubtitleRepository(postgresConnector)
 
 	if err != nil {
 		logger.Panic(err)
 	}
 }
 
-func startTelegramBotServer(config config.Config, logger loggerInterface.Logger) error {
+func startTelegramBotServer(
+	config config.Config,
+	logger loggerInterface.Logger,
+	subtitlesService subtitles.SubtitlesService,
+) error {
 	botResolver := telegramService.NewBotResolver(config.GetTelegramBotToken(), logger)
 	bot, err := botResolver.GetTelegramBot()
 
@@ -48,7 +72,6 @@ func startTelegramBotServer(config config.Config, logger loggerInterface.Logger)
 		return err
 	}
 
-	subtitlesService := subtitles.NewSubtitlesService(config)
 	phraseService := phrase.NewPhraseService()
 	userStatesService := bot_state_machine.NewUserStatesService()
 

@@ -3,19 +3,19 @@ package subtitles
 import (
 	"fmt"
 	customErrors "github.com/PanovAlexey/learn-subtitles/internal/application/errors"
-	"github.com/PanovAlexey/learn-subtitles/internal/config"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
+	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/repository"
 	"log"
 	"strings"
 )
 
 type SubtitlesService struct {
-	config config.Config
+	repository repository.SubtitleRepository
 }
 
-func NewSubtitlesService(config config.Config) SubtitlesService {
+func NewSubtitlesService(repository repository.SubtitleRepository) SubtitlesService {
 	return SubtitlesService{
-		config: config,
+		repository: repository,
 	}
 }
 

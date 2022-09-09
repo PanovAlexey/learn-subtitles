@@ -104,8 +104,8 @@ func (c *Config) initConfigByEnv() error {
 
 	c.databaseUser = getEnv("DB_USER")
 	c.databasePassword = getEnv("DB_PASSWORD")
-	c.databaseAddress = getEnv("DB_ADDRESS")
-	c.databasePort = getEnv("DB_PORT")
+	c.databaseAddress = getEnv("DB_MASTER_ADDRESS")
+	c.databasePort = getEnv("DB_MASTER_PORT")
 	c.databaseName = getEnv("DB_NAME")
 
 	maxOpenConnections := getEnv("DB_MAX_OPEN_CONNECTIONS")

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/phrase"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
+	service "github.com/PanovAlexey/learn-subtitles/internal/application/service/user"
 	"github.com/PanovAlexey/learn-subtitles/internal/config"
 	"github.com/PanovAlexey/learn-subtitles/internal/controller/bots/telegram"
 	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/repository"
@@ -54,6 +55,12 @@ func main() {
 	defer postgresConnector.DB.Close()
 
 	subtitleRepository := repository.NewSubtitleRepository(postgresConnector)
+	userRepository := repository.NewUserRepository(postgresConnector)
+
+	subtitlesService := subtitles.NewSubtitlesService(subtitleRepository)
+	userService := service.NewUserService(userRepository)
+
+	err = startTelegramBotServer(*config, logger, subtitlesService, userService)
 
 	if err != nil {
 		logger.Panic(err)
@@ -64,6 +71,7 @@ func startTelegramBotServer(
 	config config.Config,
 	logger loggerInterface.Logger,
 	subtitlesService subtitles.SubtitlesService,
+	userService service.UserService,
 ) error {
 	botResolver := telegramService.NewBotResolver(config.GetTelegramBotToken(), logger)
 	bot, err := botResolver.GetTelegramBot()
@@ -75,7 +83,12 @@ func startTelegramBotServer(
 	phraseService := phrase.NewPhraseService()
 	userStatesService := bot_state_machine.NewUserStatesService()
 
-	telegramRouter := telegram.NewRouter(bot, logger, subtitlesService, phraseService, &userStatesService)
+	telegramRouter := telegram.NewRouter(bot,
+		logger,
+		subtitlesService,
+		phraseService,
+		&userStatesService,
+		userService)
 	telegramServer := telegramServer.NewServer(telegramRouter, config.GetTelegramBotUpdateTimeout())
 	telegramServer.Start()
 

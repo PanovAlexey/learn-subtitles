@@ -2,9 +2,13 @@ package telegram
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/phrase"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
+	service "github.com/PanovAlexey/learn-subtitles/internal/application/service/user"
+	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"
+	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
 	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/bot_state_machine"
 	loggerInterface "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -17,6 +21,7 @@ type CommandRouter struct {
 	subtitlesService subtitles.SubtitlesService
 	phraseService    phrase.PhraseService
 	userStateService *bot_state_machine.UserStatesService
+	userService      service.UserService
 }
 
 // is needed to conveniently receive values passed by the user by pressing a button, rather than manually entering text.
@@ -30,6 +35,7 @@ func NewRouter(
 	subtitlesService subtitles.SubtitlesService,
 	phraseService phrase.PhraseService,
 	userStateService *bot_state_machine.UserStatesService,
+	userService service.UserService,
 ) CommandRouter {
 	return CommandRouter{
 		bot:              bot,
@@ -37,6 +43,7 @@ func NewRouter(
 		subtitlesService: subtitlesService,
 		phraseService:    phraseService,
 		userStateService: userStateService,
+		userService:      userService,
 	}
 }
 
@@ -77,6 +84,12 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 		return
 	}
 
+	user, err := r.checkUser(*update.Message.From)
+
+	if err != nil {
+		r.logger.Error(err)
+		return
+	}
 	switch update.Message.Command() {
 	case "help":
 		r.helpCommand(*update.Message)
@@ -97,4 +110,27 @@ func (r CommandRouter) getAvailableCommandListString() string {
 		"/list - get a list of text entries to study\n" +
 		"/language - set interface language\n" +
 		"/help - get list of available commands\n"
+}
+
+func (r CommandRouter) checkUser(tgUser tgbotapi.User) (dto.UserDatabaseDto, error) {
+	user, err := r.userService.GetUserByLogin(tgUser.UserName)
+
+	if err != nil {
+		return user, errors.New("getting user by login error: " + err.Error() + ". Login: " + tgUser.UserName)
+	}
+
+	if !user.Id.Valid {
+		user, err = r.userService.SaveUser(entity.User{
+			Login:     tgUser.UserName,
+			FirstName: tgUser.FirstName,
+			LastName:  tgUser.LastName,
+			IsDeleted: false,
+		})
+
+		if err != nil {
+			return user, errors.New("user registration error: " + err.Error() + ". Login: " + tgUser.UserName)
+		}
+	}
+
+	return user, nil
 }

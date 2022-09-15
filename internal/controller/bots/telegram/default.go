@@ -1,13 +1,15 @@
 package telegram
 
 import (
+	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"strconv"
 )
 
-func (r CommandRouter) defaultBehavior(inputMessage tgbotapi.Message) {
+func (r CommandRouter) defaultBehavior(inputMessage tgbotapi.Message, user dto.UserDatabaseDto) {
 	r.logger.Info("default handler. from: " + inputMessage.From.UserName + ". text:" + inputMessage.Text)
 
-	dialog, _ := r.userStateService.GetUserDialog(strconv.FormatInt(inputMessage.Chat.ID, 10))
+	dialog, _ := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
 
 	resultText := ""
 	info, err := dialog.TryToHandleUserData(inputMessage.Text)

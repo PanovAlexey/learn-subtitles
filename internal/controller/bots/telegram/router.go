@@ -58,13 +58,6 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 		}
 	}()
 
-	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(update.Message.Chat.ID, 10))
-
-	if ok == false {
-		d = bot_state_machine.NewDialog(update.Message.Chat.ID, r.subtitlesService)
-		r.userStateService.SetUserDialog(d)
-	}
-
 	if update.CallbackQuery != nil {
 		parsedData := CommandData{}
 		json.Unmarshal([]byte(update.CallbackQuery.Data), &parsedData)
@@ -91,17 +84,24 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 		r.showUnexpectedError(update.Message, err)
 		return
 	}
+
+	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
+
+	if ok == false {
+		d = bot_state_machine.NewDialog(user.Id.Int64, r.subtitlesService)
+		r.userStateService.SetUserDialog(d)
+	}
 	switch update.Message.Command() {
 	case "help":
-		r.helpCommand(*update.Message)
+		r.helpCommand(*update.Message, user)
 	case "list":
-		r.listCommand(*update.Message)
+		r.listCommand(*update.Message, user)
 	case "add":
-		r.addCommand(*update.Message)
+		r.addCommand(*update.Message, user)
 	case "debug":
-		r.debugCommand(*update.Message)
+		r.debugCommand(*update.Message, user)
 	default:
-		r.defaultBehavior(*update.Message)
+		r.defaultBehavior(*update.Message, user)
 	}
 }
 

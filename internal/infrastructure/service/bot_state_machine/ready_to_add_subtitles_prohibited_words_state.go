@@ -38,7 +38,7 @@ func (s *ReadyToAddSubtitlesProhibitedWordsState) AddForbiddenPartsAndSaveSubtit
 	}
 
 	subtitles.ForbiddenParts = s.dialog.subtitlesService.GetForbiddenPartsMapByString(forbiddenPartsString)
-	result, err := s.dialog.subtitlesService.Add(subtitles, 1) //@ToDo: change for real data
+	result, err := s.dialog.subtitlesService.Add(subtitles, s.dialog.userId)
 
 	if err != nil {
 		return nil, err

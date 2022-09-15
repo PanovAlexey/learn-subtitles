@@ -3,27 +3,34 @@ package subtitles
 import (
 	"fmt"
 	customErrors "github.com/PanovAlexey/learn-subtitles/internal/application/errors"
+	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
-	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/repository"
-	"log"
 	"strings"
 )
 
-type SubtitlesService struct {
-	repository repository.SubtitleRepository
+type SubtitlesRepository interface {
+	Add(subtitles entity.Subtitle, userId int64) (dto.SubtitleDatabaseDto, error)
+	GetList(userId int) ([]dto.SubtitleDatabaseDto, error)
+	GetById(id, userId int) (dto.SubtitleDatabaseDto, error)
+	Delete(id, userId int) error
+	Update() (dto.SubtitleDatabaseDto, error)
 }
 
-func NewSubtitlesService(repository repository.SubtitleRepository) SubtitlesService {
+type SubtitlesService struct {
+	repository SubtitlesRepository
+}
+
+func NewSubtitlesService(repository SubtitlesRepository) SubtitlesService {
 	return SubtitlesService{
 		repository: repository,
 	}
 }
 
-func (s SubtitlesService) Add(userId int, subtitles entity.Subtitle) (entity.Subtitle, error) {
-	return nil
-	subtitles = s.applyForbiddenParts(subtitles)
+func (s SubtitlesService) Add(subtitles entity.Subtitle, userId int64) (dto.SubtitleDatabaseDto, error) {
+	subtitles = s.applyForbiddenParts(subtitles) // @ToDo: add forbidden parts saving
+	subtitleDatabaseDto, err := s.repository.Add(subtitles, userId)
 
-	return subtitles, nil
+	return subtitleDatabaseDto, err
 }
 
 func (s SubtitlesService) GetList(userId int) ([]entity.Subtitle, error) {

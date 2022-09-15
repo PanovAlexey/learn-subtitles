@@ -7,6 +7,7 @@ import (
 )
 
 const TableUsersName = `users`
+const TableSubtitlesName = `subtitles`
 
 func GetPostgresConnector(
 	databaseUser, databasePassword, databaseAddress, databasePort, databaseName string,

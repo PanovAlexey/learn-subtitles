@@ -81,13 +81,14 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 	}
 
 	if update.Message == nil {
+		r.showUnexpectedError(update.Message, errors.New("update message is nil"))
 		return
 	}
 
 	user, err := r.checkUser(*update.Message.From)
 
 	if err != nil {
-		r.logger.Error(err)
+		r.showUnexpectedError(update.Message, err)
 		return
 	}
 	switch update.Message.Command() {
@@ -102,6 +103,17 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 	default:
 		r.defaultBehavior(*update.Message)
 	}
+}
+
+func (r CommandRouter) showUnexpectedError(inputMessage *tgbotapi.Message, err error) {
+	r.logger.Error(err)
+
+	msg := tgbotapi.NewMessage(
+		inputMessage.Chat.ID,
+		"Unexpected error occurred. Please try again or contact administrator.",
+	)
+	msg.ParseMode = tgbotapi.ModeHTML
+	r.bot.Send(msg)
 }
 
 func (r CommandRouter) getAvailableCommandListString() string {
@@ -119,7 +131,7 @@ func (r CommandRouter) checkUser(tgUser tgbotapi.User) (dto.UserDatabaseDto, err
 		return user, errors.New("getting user by login error: " + err.Error() + ". Login: " + tgUser.UserName)
 	}
 
-	if !user.Id.Valid {
+	if !user.Id.Valid || user.Id.Int64 < 1 {
 		user, err = r.userService.SaveUser(entity.User{
 			Login:     tgUser.UserName,
 			FirstName: tgUser.FirstName,
@@ -128,6 +140,10 @@ func (r CommandRouter) checkUser(tgUser tgbotapi.User) (dto.UserDatabaseDto, err
 		})
 
 		if err != nil {
+			return user, errors.New("user registration error: " + err.Error() + ". Login: " + tgUser.UserName)
+		}
+
+		if !user.Id.Valid || user.Id.Int64 < 1 {
 			return user, errors.New("user registration error: " + err.Error() + ". Login: " + tgUser.UserName)
 		}
 	}

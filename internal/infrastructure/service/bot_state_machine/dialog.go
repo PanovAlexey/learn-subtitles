@@ -68,7 +68,8 @@ func (d *Dialog) TryToHandleUserData(data string) (string, []dto.CommandButton, 
 			return info, nil, err
 		}
 
-		d.subtitles.Name = data
+		d.subtitles.Name.String = data
+		d.subtitles.Author.Int64 = d.userId
 
 		return info, nil, nil
 	case ReadyToAddSubtitlesText:
@@ -78,7 +79,8 @@ func (d *Dialog) TryToHandleUserData(data string) (string, []dto.CommandButton, 
 			return info, nil, err
 		}
 
-		d.subtitles.Text = data
+		d.subtitles.Text.String = data
+		d.subtitles.Author.Int64 = d.userId
 
 		return info, nil, nil
 	case ReadyToAddSubtitlesProhibitedWords:
@@ -168,10 +170,10 @@ func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, fo
 		}
 
 		info += "You have successfully added text!\n" +
-			"<strong>name:</strong> " + d.subtitles.Name + "\n" +
-			"<strong>length of text:</strong> " + strconv.Itoa(len(d.subtitles.Text)) + "\n" +
+			"<strong>name:</strong> " + d.subtitles.Name.String + "\n" +
+			"<strong>length of text:</strong> " + strconv.Itoa(len(d.subtitles.Text.String)) + "\n" +
 			"<strong>spoiler substitution map:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.ForbiddenParts) + "\n" +
-			"<strong>Text:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.Text) + "\n"
+			"<strong>Text:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.Text.String) + "\n"
 	}
 
 	var buttons []dto.CommandButton

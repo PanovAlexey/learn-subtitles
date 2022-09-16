@@ -3,17 +3,16 @@ package subtitles
 import (
 	"fmt"
 	customErrors "github.com/PanovAlexey/learn-subtitles/internal/application/errors"
-	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
 	"strings"
 )
 
 type SubtitlesRepository interface {
-	Add(subtitles entity.Subtitle, userId int64) (dto.SubtitleDatabaseDto, error)
-	GetList(userId int) ([]dto.SubtitleDatabaseDto, error)
-	GetById(id, userId int) (dto.SubtitleDatabaseDto, error)
+	Add(subtitles entity.Subtitle) (entity.Subtitle, error)
+	GetList(userId int) ([]entity.Subtitle, error)
+	GetById(id, userId int) (entity.Subtitle, error)
 	Delete(id, userId int) error
-	Update() (dto.SubtitleDatabaseDto, error)
+	Update(entity.Subtitle) (entity.Subtitle, error)
 }
 
 type SubtitlesService struct {
@@ -26,11 +25,11 @@ func NewSubtitlesService(repository SubtitlesRepository) SubtitlesService {
 	}
 }
 
-func (s SubtitlesService) Add(subtitles entity.Subtitle, userId int64) (dto.SubtitleDatabaseDto, error) {
+func (s SubtitlesService) Add(subtitles entity.Subtitle) (entity.Subtitle, error) {
 	subtitles = s.applyForbiddenParts(subtitles) // @ToDo: add forbidden parts saving
-	subtitleDatabaseDto, err := s.repository.Add(subtitles, userId)
+	outSubtitles, err := s.repository.Add(subtitles)
 
-	return subtitleDatabaseDto, err
+	return outSubtitles, err
 }
 
 func (s SubtitlesService) GetList(userId int) ([]entity.Subtitle, error) {
@@ -116,7 +115,7 @@ func (s SubtitlesService) applyForbiddenParts(subtitles entity.Subtitle) entity.
 		counter = counter + 2
 	}
 
-	subtitles.Text = strings.NewReplacer(parts...).Replace(subtitles.Text)
+	subtitles.Text.Scan(strings.NewReplacer(parts...).Replace(subtitles.Text.String))
 
 	return subtitles
 }

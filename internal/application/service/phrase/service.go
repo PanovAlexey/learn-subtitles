@@ -1,7 +1,6 @@
 package phrase
 
 import (
-	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
 	"strings"
 )
@@ -38,12 +37,12 @@ func (s PhraseService) HideThisPhraseById() {
 
 }
 
-func (s PhraseService) SaveTextInPhrases(dto dto.SubtitleDatabaseDto) (error, int) {
-	phrases := s.splitText(dto.Text.String)
+func (s PhraseService) SaveTextInPhrases(subtitles entity.Subtitle) (error, int) {
+	phrases := s.splitText(subtitles.Text.String)
 	count := 0
 
 	for _, v := range phrases {
-		_, err := s.repository.Add(v, dto.Id.Int64)
+		_, err := s.repository.Add(v, subtitles.Id.Int64)
 
 		if err != nil {
 			return err, count

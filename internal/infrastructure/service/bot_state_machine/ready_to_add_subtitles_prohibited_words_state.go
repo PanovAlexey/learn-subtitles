@@ -33,23 +33,23 @@ func (s *ReadyToAddSubtitlesProhibitedWordsState) AddForbiddenPartsAndSaveSubtit
 	subtitles entity.Subtitle,
 	forbiddenPartsString string,
 ) (*entity.Subtitle, error) {
-	if len(forbiddenPartsString) > len(subtitles.Text) {
+	if len(forbiddenPartsString) > len(subtitles.Text.String) {
 		return nil, fmt.Errorf("%v: %w", forbiddenPartsString, customErrors.ErrTooLong)
 	}
 
 	subtitles.ForbiddenParts = s.dialog.subtitlesService.GetForbiddenPartsMapByString(forbiddenPartsString)
-	result, err := s.dialog.subtitlesService.Add(subtitles, s.dialog.userId)
+	result, err := s.dialog.subtitlesService.Add(subtitles)
 
 	if err != nil {
 		return nil, err
 	}
 
 	resultSubtitles := entity.Subtitle{
-		Name:      result.Name.String,
-		Text:      result.Text.String,
-		CreatedAt: result.CreatedAt.Time,
-		Author:    entity.User{}, //@ToDo: fill info about user
-		IsDeleted: result.IsDeleted.Bool,
+		Name:      result.Name,
+		Text:      result.Text,
+		CreatedAt: result.CreatedAt,
+		Author:    result.Author,
+		IsDeleted: result.IsDeleted,
 		// ForbiddenParts: @ToDo: implement it
 	}
 

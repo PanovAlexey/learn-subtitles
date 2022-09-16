@@ -1,10 +1,13 @@
 package entity
 
-import "time"
+import (
+	"database/sql"
+)
 
 type Phrase struct {
-	Text      string
-	CreatedAt time.Time
-	Author    User
-	IsDeleted bool
+	Id        sql.NullInt64  `db:"id"`
+	Text      sql.NullString `db:"text"`
+	CreatedAt sql.NullTime   `db:"created_at"`
+	Subtitle  sql.NullInt64  `db:"subtitle_id"`
+	IsDeleted sql.NullBool   `db:"is_deleted"`
 }

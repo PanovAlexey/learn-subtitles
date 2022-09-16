@@ -51,12 +51,13 @@ func NewDialog(userId int64, subtitlesService subtitles.SubtitlesService, phrase
 	return d
 }
 
-func (d *Dialog) TryToHandleUserData(data string) (string, error) {
+func (d *Dialog) TryToHandleUserData(data string) (string, []dto.CommandButton, error) {
 	stateCode := d.currentState.GetCode()
 
 	switch stateCode {
 	case Rest:
 		return "",
+			nil,
 			errors.New(
 				"no command selected for interaction. Input: " + data,
 			)
@@ -64,30 +65,30 @@ func (d *Dialog) TryToHandleUserData(data string) (string, error) {
 		info, err := d.AddSubtitlesName(data)
 
 		if err != nil {
-			return info, err
+			return info, nil, err
 		}
 
 		d.subtitles.Name = data
 
-		return info, nil
+		return info, nil, nil
 	case ReadyToAddSubtitlesText:
 		info, err := d.AddSubtitlesText(data)
 
 		if err != nil {
-			return info, err
+			return info, nil, err
 		}
 
 		d.subtitles.Text = data
 
-		return info, nil
+		return info, nil, nil
 	case ReadyToAddSubtitlesProhibitedWords:
-		info, err := d.AddForbiddenPartsAndSaveSubtitles(d.subtitles, data)
+		info, buttons, err := d.AddForbiddenPartsAndSaveSubtitles(d.subtitles, data)
 
 		if err != nil {
-			return info, err
+			return info, buttons, err
 		}
 
-		return info, nil
+		return info, buttons, nil
 	case HasSubtitlesList:
 
 	case SelectedSubtitles:
@@ -98,12 +99,12 @@ func (d *Dialog) TryToHandleUserData(data string) (string, error) {
 	default:
 		d.SetRestState()
 
-		return "", errors.New(
+		return "", nil, errors.New(
 			"wrong current state code: " + strconv.Itoa(int(stateCode)),
 		)
 	}
 
-	return "", nil
+	return "", nil, nil
 }
 
 func (d *Dialog) AddSubtitles() error {
@@ -146,24 +147,23 @@ func (d *Dialog) AddSubtitlesText(text string) (string, error) {
 	return info, err
 }
 
-func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) (string, error) {
+func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) (string, []dto.CommandButton, error) {
 	resultSubtitles, err := d.currentState.AddForbiddenPartsAndSaveSubtitles(subtitles, forbiddenPartsString)
 	info := ""
 
 	if err != nil {
 		if errors.As(err, &customErrors.ErrTooLong) {
-			return "The length of replacement phrases should not exceed the length of the main text. Please re-enter.", nil //@ToDo: move magic number to constants
+			return "The length of replacement phrases should not " +
+				"exceed the length of the main text. Please re-enter.", nil, nil //@ToDo: move magic number to constants
 		}
 
-		return info, err
+		return info, nil, err
 	} else {
 		d.subtitles = *resultSubtitles
 
 		if len(d.subtitles.ForbiddenParts) < 1 {
 			if len(forbiddenPartsString) < 1 {
 				info = "You have not specified a phrase to replace.\n\n"
-			} else {
-				info = "Failed to parse string with replacement phrases.\n\n"
 			}
 		}
 
@@ -174,7 +174,16 @@ func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, fo
 			"<strong>Text:</strong> " + fmt.Sprintf("%+v\n", d.subtitles.Text) + "\n"
 	}
 
-	return info, err
+	var buttons []dto.CommandButton
+
+	buttons = append(
+		buttons,
+		dto.CommandButton{Data: "23", Command: "get_p", Text: "Check phrase"},  //@ToDo: replace to real data
+		dto.CommandButton{Data: "11", Command: "del_sub", Text: "Delete text"}, //@ToDo: replace to real data
+		dto.CommandButton{Data: "11", Command: "help", Text: "To menu"},        //@ToDo: replace to real data
+	)
+
+	return info, buttons, err
 }
 
 func (d *Dialog) GetSubtitlesList() ([]entity.Subtitle, error) {

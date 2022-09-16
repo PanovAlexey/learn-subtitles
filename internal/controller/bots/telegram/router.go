@@ -3,12 +3,12 @@ package telegram
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/phrase"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	service "github.com/PanovAlexey/learn-subtitles/internal/application/service/user"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
+	infrastructureDto "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/dto"
 	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/bot_state_machine"
 	loggerInterface "github.com/PanovAlexey/learn-subtitles/internal/infrastructure/service/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -22,11 +22,6 @@ type CommandRouter struct {
 	phraseService    phrase.PhraseService
 	userStateService *bot_state_machine.UserStatesService
 	userService      service.UserService
-}
-
-// is needed to conveniently receive values passed by the user by pressing a button, rather than manually entering text.
-type CommandData struct {
-	Offset int `json:"offset"`
 }
 
 func NewRouter(
@@ -58,32 +53,7 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 		}
 	}()
 
-	if update.CallbackQuery != nil {
-		parsedData := CommandData{}
-		json.Unmarshal([]byte(update.CallbackQuery.Data), &parsedData)
-		msg := tgbotapi.NewMessage(
-			update.CallbackQuery.Message.Chat.ID,
-			"Data from button: "+update.CallbackQuery.Data+
-				fmt.Sprintf("Parsed: %+v\n", parsedData.Offset),
-			// fmt.Sprintf(". Command: %s\n", args[0])+
-			// fmt.Sprintf("Offset: %s\n", args[1]),
-		)
-
-		r.bot.Send(msg)
-		return
-	}
-
-	if update.Message == nil {
-		r.showUnexpectedError(update.Message, errors.New("update message is nil"))
-		return
-	}
-
-	user, err := r.checkUser(*update.Message.From)
-
-	if err != nil {
-		r.showUnexpectedError(update.Message, err)
-		return
-	}
+	user := *r.getUserByUpdate(update)
 
 	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
 
@@ -91,18 +61,71 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 		d = bot_state_machine.NewDialog(user.Id.Int64, r.subtitlesService, r.phraseService)
 		r.userStateService.SetUserDialog(d)
 	}
-	switch update.Message.Command() {
+
+	command := r.getCommandByUpdate(update)
+
+	/////////////
+		r.showUnexpectedError(update.Message, err)
+		return
+	}
+
+	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
+
+	switch command {
 	case "help":
 		r.helpCommand(*update.Message, user)
 	case "list":
 		r.listCommand(*update.Message, user)
 	case "add":
 		r.addCommand(*update.Message, user)
+	case "del_sub":
+		r.deleteSubtitlesCommand(*update.Message, user)
+	case "get_p":
+		r.getPhraseCommand(*update.Message, user)
 	case "debug":
 		r.debugCommand(*update.Message, user)
 	default:
 		r.defaultBehavior(*update.Message, user)
 	}
+}
+
+func (r CommandRouter) getUserByUpdate(update tgbotapi.Update) *dto.UserDatabaseDto {
+	var inputUser tgbotapi.User
+
+	if update.Message != nil {
+		inputUser = *update.Message.From
+	} else if update.CallbackQuery.From != nil {
+		inputUser = *update.CallbackQuery.From
+	} else {
+		r.showUnexpectedError(update.Message, errors.New("update message and callback query both are nil"))
+		return nil
+	}
+
+	user, err := r.checkUser(inputUser)
+
+	if err != nil {
+		r.showUnexpectedError(update.Message, err)
+		return nil
+	}
+
+	return &user
+}
+
+func (r CommandRouter) getCommandByUpdate(update tgbotapi.Update) string {
+	var command string
+
+	if update.Message != nil {
+		command = update.Message.Command()
+	} else if update.CallbackQuery.From != nil {
+		parsedData := infrastructureDto.CommandButton{}
+		json.Unmarshal([]byte(update.CallbackQuery.Data), &parsedData)
+		command = parsedData.Command
+	} else {
+		r.showUnexpectedError(update.Message, errors.New("update message and callback query both are nil"))
+		return ""
+	}
+
+	return command
 }
 
 func (r CommandRouter) showUnexpectedError(inputMessage *tgbotapi.Message, err error) {

@@ -1,4 +1,4 @@
-package service
+package user
 
 import (
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/dto"

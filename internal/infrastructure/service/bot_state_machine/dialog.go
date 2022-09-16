@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	customErrors "github.com/PanovAlexey/learn-subtitles/internal/application/errors"
+	"github.com/PanovAlexey/learn-subtitles/internal/application/service/phrase"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 type Dialog struct {
 	subtitlesService subtitles.SubtitlesService
+	phraseService    phrase.PhraseService
 
 	rest                               State
 	readyToAddSubtitlesName            State
@@ -29,8 +31,11 @@ type Dialog struct {
 }
 
 func NewDialog(userId int64, subtitlesService subtitles.SubtitlesService) *Dialog {
+func NewDialog(userId int64, subtitlesService subtitles.SubtitlesService, phraseService phrase.PhraseService) *Dialog {
 	d := &Dialog{}
 	d.subtitlesService = subtitlesService
+	d.phraseService = phraseService
+
 	d.userId = userId
 	d.rest = &RestState{dialog: d}
 	d.readyToAddSubtitlesName = &ReadyToAddSubtitlesNameState{dialog: d}

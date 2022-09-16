@@ -55,6 +55,12 @@ func (s *ReadyToAddSubtitlesProhibitedWordsState) AddForbiddenPartsAndSaveSubtit
 
 	s.dialog.SetRestState()
 
+	// @ToDo: move to the message queue event handler
+	err, _ = s.dialog.phraseService.SaveTextInPhrases(result)
+	if err != nil {
+		return &resultSubtitles, err
+	}
+
 	return &resultSubtitles, nil
 }
 

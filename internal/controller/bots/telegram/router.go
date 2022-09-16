@@ -88,7 +88,7 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
 
 	if ok == false {
-		d = bot_state_machine.NewDialog(user.Id.Int64, r.subtitlesService)
+		d = bot_state_machine.NewDialog(user.Id.Int64, r.subtitlesService, r.phraseService)
 		r.userStateService.SetUserDialog(d)
 	}
 	switch update.Message.Command() {

@@ -46,8 +46,8 @@ func (s *HasRandomPhraseState) DeleteSubtitlesById() error {
 	return nil
 }
 
-func (s *HasRandomPhraseState) GetRandomPhraseBySubtitlesId() (*entity.Phrase, error) {
-	return &entity.Phrase{}, nil
+func (s *HasRandomPhraseState) GetRandomPhraseByCurrentSubtitles() (entity.Phrase, error) {
+	return entity.Phrase{}, nil
 }
 
 func (s *HasRandomPhraseState) GetTranslateByPhraseId() (*entity.PhraseTranslation, error) {

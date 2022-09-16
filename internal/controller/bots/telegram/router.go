@@ -54,7 +54,6 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 	}()
 
 	user := *r.getUserByUpdate(update)
-
 	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
 
 	if ok == false {
@@ -62,7 +61,8 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 		r.userStateService.SetUserDialog(d)
 	}
 
-	command := r.getCommandByUpdate(update)
+	commandButton := r.getCommandByUpdate(update)
+	message := *r.getMessageByUpdate(update)
 
 	/////////////
 		r.showUnexpectedError(update.Message, err)
@@ -71,21 +71,21 @@ func (r CommandRouter) HandleUpdate(update tgbotapi.Update) {
 
 	d, ok := r.userStateService.GetUserDialog(strconv.FormatInt(user.Id.Int64, 10))
 
-	switch command {
+	switch commandButton.Command {
 	case "help":
-		r.helpCommand(*update.Message, user)
+		r.helpCommand(message, user)
 	case "list":
-		r.listCommand(*update.Message, user)
+		r.listCommand(message, user)
 	case "add":
-		r.addCommand(*update.Message, user)
+		r.addCommand(message, user)
 	case "del_sub":
-		r.deleteSubtitlesCommand(*update.Message, user)
+		r.deleteSubtitlesCommand(message, user)
 	case "get_p":
-		r.getPhraseCommand(*update.Message, user)
+		r.getPhraseCommand(message, user, commandButton)
 	case "debug":
-		r.debugCommand(*update.Message, user)
+		r.debugCommand(message, user)
 	default:
-		r.defaultBehavior(*update.Message, user)
+		r.defaultBehavior(message, user)
 	}
 }
 
@@ -97,38 +97,47 @@ func (r CommandRouter) getUserByUpdate(update tgbotapi.Update) *dto.UserDatabase
 	} else if update.CallbackQuery.From != nil {
 		inputUser = *update.CallbackQuery.From
 	} else {
-		r.showUnexpectedError(update.Message, errors.New("update message and callback query both are nil"))
+		r.showUnexpectedError(*update.Message, errors.New("update message and callback query both are nil"))
 		return nil
 	}
 
 	user, err := r.checkUser(inputUser)
 
 	if err != nil {
-		r.showUnexpectedError(update.Message, err)
+		r.showUnexpectedError(*update.Message, err)
 		return nil
 	}
 
 	return &user
 }
 
-func (r CommandRouter) getCommandByUpdate(update tgbotapi.Update) string {
-	var command string
-
+func (r CommandRouter) getMessageByUpdate(update tgbotapi.Update) *tgbotapi.Message {
 	if update.Message != nil {
-		command = update.Message.Command()
-	} else if update.CallbackQuery.From != nil {
-		parsedData := infrastructureDto.CommandButton{}
-		json.Unmarshal([]byte(update.CallbackQuery.Data), &parsedData)
-		command = parsedData.Command
+		return update.Message
+	} else if update.CallbackQuery.Message != nil {
+		return update.CallbackQuery.Message
 	} else {
-		r.showUnexpectedError(update.Message, errors.New("update message and callback query both are nil"))
-		return ""
+		r.showUnexpectedError(*update.Message, errors.New("update message and callback query both are nil"))
+		return nil
 	}
-
-	return command
 }
 
-func (r CommandRouter) showUnexpectedError(inputMessage *tgbotapi.Message, err error) {
+func (r CommandRouter) getCommandByUpdate(update tgbotapi.Update) infrastructureDto.CommandButton {
+	var commandButton infrastructureDto.CommandButton
+
+	if update.Message != nil {
+		commandButton = infrastructureDto.CommandButton{Command: update.Message.Command()}
+	} else if update.CallbackQuery != nil {
+		json.Unmarshal([]byte(update.CallbackQuery.Data), &commandButton)
+	} else {
+		r.showUnexpectedError(*update.Message, errors.New("update message and callback query both are nil"))
+		return commandButton
+	}
+
+	return commandButton
+}
+
+func (r CommandRouter) showUnexpectedError(inputMessage tgbotapi.Message, err error) {
 	r.logger.Error(err)
 
 	msg := tgbotapi.NewMessage(
@@ -172,4 +181,24 @@ func (r CommandRouter) checkUser(tgUser tgbotapi.User) (dto.UserDatabaseDto, err
 	}
 
 	return user, nil
+}
+
+func (r CommandRouter) addButtonsToMsg(msg tgbotapi.MessageConfig, buttons []infrastructureDto.CommandButton) tgbotapi.MessageConfig {
+	var jsonButtons []tgbotapi.InlineKeyboardButton
+
+	for _, button := range buttons {
+		jsonButton, _ := json.Marshal(button)
+
+		inlineKeyboardButtons := tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(button.Text, string(jsonButton)),
+		)
+
+		for _, v := range inlineKeyboardButtons {
+			jsonButtons = append(jsonButtons, v)
+		}
+	}
+
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(jsonButtons)
+
+	return msg
 }

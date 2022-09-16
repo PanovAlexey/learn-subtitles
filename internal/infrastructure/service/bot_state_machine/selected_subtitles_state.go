@@ -46,8 +46,10 @@ func (s *SelectedSubtitlesState) DeleteSubtitlesById() error {
 	return nil
 }
 
-func (s *SelectedSubtitlesState) GetRandomPhraseBySubtitlesId() (*entity.Phrase, error) {
-	return &entity.Phrase{}, nil
+func (s *SelectedSubtitlesState) GetRandomPhraseByCurrentSubtitles() (entity.Phrase, error) {
+	phrase, err := s.dialog.phraseService.GetRandomPhraseBySubtitleId(s.dialog.subtitles.Id.Int64, s.dialog.userId)
+
+	return phrase, err
 }
 
 func (s *SelectedSubtitlesState) GetTranslateByPhraseId() (*entity.PhraseTranslation, error) {

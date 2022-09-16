@@ -10,7 +10,7 @@ type State interface {
 	GetSubtitlesList() ([]entity.Subtitle, error)
 	GetSubtitlesById() (*entity.Subtitle, error)
 	DeleteSubtitlesById() error
-	GetRandomPhraseBySubtitlesId() (*entity.Phrase, error)
+	GetRandomPhraseByCurrentSubtitles() (entity.Phrase, error)
 	GetTranslateByPhraseId() (*entity.PhraseTranslation, error)
 	SetTranslateByPhraseId(translation string) error
 	HideThisPhraseById() error

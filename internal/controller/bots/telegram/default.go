@@ -30,21 +30,7 @@ func (r CommandRouter) defaultBehavior(inputMessage tgbotapi.Message, user dto.U
 	msg.ReplyToMessageID = inputMessage.MessageID
 
 	if len(buttons) > 0 {
-		jsonButtons := []tgbotapi.InlineKeyboardButton{}
-
-		for _, button := range buttons {
-			jsonButton, _ := json.Marshal(button)
-
-			inlineKeyboardButtons := tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(button.Text, string(jsonButton)),
-			)
-
-			for _, v := range inlineKeyboardButtons {
-				jsonButtons = append(jsonButtons, v)
-			}
-		}
-
-		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(jsonButtons)
+		msg = r.addButtonsToMsg(msg, buttons)
 	}
 
 	r.bot.Send(msg)

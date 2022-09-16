@@ -38,25 +38,17 @@ func (s *ReadyToAddSubtitlesProhibitedWordsState) AddForbiddenPartsAndSaveSubtit
 	}
 
 	subtitles.ForbiddenParts = s.dialog.subtitlesService.GetForbiddenPartsMapByString(forbiddenPartsString)
-	result, err := s.dialog.subtitlesService.Add(subtitles)
+	resultSubtitles, err := s.dialog.subtitlesService.Add(subtitles)
 
 	if err != nil {
 		return nil, err
 	}
 
-	resultSubtitles := entity.Subtitle{
-		Name:      result.Name,
-		Text:      result.Text,
-		CreatedAt: result.CreatedAt,
-		Author:    result.Author,
-		IsDeleted: result.IsDeleted,
-		// ForbiddenParts: @ToDo: implement it
-	}
-
-	s.dialog.SetRestState()
+	s.dialog.SetSelectedSubtitlesState()
 
 	// @ToDo: move to the message queue event handler
-	err, _ = s.dialog.phraseService.SaveTextInPhrases(result)
+	err, _ = s.dialog.phraseService.SaveTextInPhrases(resultSubtitles)
+
 	if err != nil {
 		return &resultSubtitles, err
 	}
@@ -76,8 +68,8 @@ func (s *ReadyToAddSubtitlesProhibitedWordsState) DeleteSubtitlesById() error {
 	return nil
 }
 
-func (s *ReadyToAddSubtitlesProhibitedWordsState) GetRandomPhraseBySubtitlesId() (*entity.Phrase, error) {
-	return &entity.Phrase{}, nil
+func (s *ReadyToAddSubtitlesProhibitedWordsState) GetRandomPhraseByCurrentSubtitles() (entity.Phrase, error) {
+	return entity.Phrase{}, nil
 }
 
 func (s *ReadyToAddSubtitlesProhibitedWordsState) GetTranslateByPhraseId() (*entity.PhraseTranslation, error) {

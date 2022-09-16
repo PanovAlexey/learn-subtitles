@@ -7,6 +7,7 @@ import (
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/phrase"
 	"github.com/PanovAlexey/learn-subtitles/internal/application/service/subtitles"
 	"github.com/PanovAlexey/learn-subtitles/internal/domain/entity"
+	"github.com/PanovAlexey/learn-subtitles/internal/infrastructure/dto"
 	"strconv"
 )
 
@@ -149,7 +150,10 @@ func (d *Dialog) AddSubtitlesText(text string) (string, error) {
 	return info, err
 }
 
-func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, forbiddenPartsString string) (string, []dto.CommandButton, error) {
+func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(
+	subtitles entity.Subtitle,
+	forbiddenPartsString string,
+) (string, []dto.CommandButton, error) {
 	resultSubtitles, err := d.currentState.AddForbiddenPartsAndSaveSubtitles(subtitles, forbiddenPartsString)
 	info := ""
 
@@ -180,9 +184,9 @@ func (d *Dialog) AddForbiddenPartsAndSaveSubtitles(subtitles entity.Subtitle, fo
 
 	buttons = append(
 		buttons,
-		dto.CommandButton{Data: "23", Command: "get_p", Text: "Check phrase"},  //@ToDo: replace to real data
-		dto.CommandButton{Data: "11", Command: "del_sub", Text: "Delete text"}, //@ToDo: replace to real data
-		dto.CommandButton{Data: "11", Command: "help", Text: "To menu"},        //@ToDo: replace to real data
+		dto.CommandButton{Id: d.subtitles.Id.Int64, Command: "get_p", Text: "Check phrase"},
+		dto.CommandButton{Id: d.subtitles.Id.Int64, Command: "del_sub", Text: "Delete text"},
+		dto.CommandButton{Id: d.subtitles.Id.Int64, Command: "help", Text: "To menu"},
 	)
 
 	return info, buttons, err
@@ -200,8 +204,19 @@ func (d *Dialog) DeleteSubtitlesById() error {
 	return d.currentState.DeleteSubtitlesById()
 }
 
-func (d *Dialog) GetRandomPhraseBySubtitlesId() (*entity.Phrase, error) {
-	return d.currentState.GetRandomPhraseBySubtitlesId()
+func (d *Dialog) GetRandomPhraseByCurrentSubtitles() (entity.Phrase, []dto.CommandButton, error) {
+	var buttons []dto.CommandButton
+
+	buttons = append(
+		buttons,
+		dto.CommandButton{Id: d.subtitles.Id.Int64, Command: "get_p", Text: "Check phrase"},
+		dto.CommandButton{Id: d.subtitles.Id.Int64, Command: "del_p", Text: "Delete phrase"},
+		dto.CommandButton{Id: d.subtitles.Id.Int64, Command: "help", Text: "To menu"},
+	)
+
+	phrase, err := d.currentState.GetRandomPhraseByCurrentSubtitles()
+
+	return phrase, buttons, err
 }
 
 func (d *Dialog) GetTranslateByPhraseId() (*entity.PhraseTranslation, error) {

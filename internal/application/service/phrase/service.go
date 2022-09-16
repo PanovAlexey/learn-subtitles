@@ -10,7 +10,7 @@ const maxPhraseLength = 100
 type PhraseRepository interface {
 	Add(text string, subtitleId int64) (entity.Phrase, error)
 	GetById(id int64) (entity.Phrase, error)
-	GetRandom(id, subtitleId int64) (entity.Phrase, error)
+	GetRandom(subtitleId, userId int64) (entity.Phrase, error)
 }
 
 type PhraseService struct {
@@ -21,8 +21,8 @@ func NewPhraseService(repository PhraseRepository) PhraseService {
 	return PhraseService{repository: repository}
 }
 
-func (s PhraseService) GetRandomPhraseBySubtitleId(subtitleId int) *entity.Phrase {
-	return nil
+func (s PhraseService) GetRandomPhraseBySubtitleId(subtitleId, userId int64) (entity.Phrase, error) {
+	return s.repository.GetRandom(subtitleId, userId)
 }
 
 func (s PhraseService) GetTranslateByPhraseId() (*entity.PhraseTranslation, error) {
